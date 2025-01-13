@@ -1,4 +1,4 @@
-name: Publish Package
+name: Publish Package to PyPI
 
 on:
   workflow_dispatch:
@@ -37,19 +37,22 @@ jobs:
           path: dist/
 
   publish-pypi:
-    needs: [publish-testpypi]
+    name: upload release to PyPI
+    needs:
+      - build
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
       id-token: write
-
     steps:
-      - uses: actions/download-artifact@v4
+      - name: Download all the dists
+        uses: actions/download-artifact@v4
         with:
           name: python-package-distributions
           path: dist/
 
-      - uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Publish distribution 📦 to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
           verbose: true
           print-hash: true
