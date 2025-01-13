@@ -1,7 +1,8 @@
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 import os
-from .utils import ensemble_predict_weights, label_encoder
+import pandas as pd
+from .utils import ensemble_predict_weights
 from transformers import AutoTokenizer, AutoModel, MT5Tokenizer, MT5Model
 from sentence_transformers import SentenceTransformer
 import torch
@@ -62,17 +63,20 @@ class TextDetector:
 
         best_weights = {
             'Tamil': [0.0, 0.1, 0.5, 0.4],
-            'Malayalam': [0.1, 0.4, 0.4, 0.1]
+            'Malayalam': [0.2, 0.4, 0.4, 0.0]
         }[self.language]
 
+        print("Language:", self.language)
+        print("Best weights:", best_weights)
         features = self._extract_features(text)
         prediction = ensemble_predict_weights(
             self.models[0], self.models[1], 
             self.models[2], self.models[3], 
             features, 
+            self.language,
             best_weights
         )
-        return label_encoder.inverse_transform(prediction)
+        return prediction
 
     def _extract_features(self, text):
         """
@@ -80,7 +84,7 @@ class TextDetector:
         Args:
             text (str): Input text
         Returns:
-            numpy.ndarray: Combined features for prediction
+            list[pd.DataFrame]: List of feature DataFrames from each model
         """
         features = []
         
@@ -89,28 +93,30 @@ class TextDetector:
             mt5_inputs = self.mt5_tokenizer(text, padding=True, truncation=True, return_tensors="pt")
             mt5_outputs = self.mt5_model.encoder(**mt5_inputs)
             mt5_embeddings = mt5_outputs.last_hidden_state.mean(dim=1).cpu().numpy()
-            features.append(mt5_embeddings)
+            embeddings_df = pd.DataFrame(mt5_embeddings, columns=[f'embedding_{i}' for i in range(mt5_embeddings.shape[1])])
+            features.append(embeddings_df)
 
         # Extract XLM features
         with torch.no_grad():
             xlm_inputs = self.xlm_tokenizer(text, padding=True, truncation=True, return_tensors="pt")
             xlm_outputs = self.xlm_model(**xlm_inputs)
             xlm_embeddings = xlm_outputs.last_hidden_state.mean(dim=1).cpu().numpy()
-            features.append(xlm_embeddings)
+            embeddings_df = pd.DataFrame(xlm_embeddings, columns=[f'embedding_{i}' for i in range(xlm_embeddings.shape[1])])
+            features.append(embeddings_df)
 
         # Extract IndicBERT features
         with torch.no_grad():
             indic_inputs = self.indic_tokenizer(text, padding=True, truncation=True, return_tensors="pt")
             indic_outputs = self.indic_model(**indic_inputs)
             indic_embeddings = indic_outputs.last_hidden_state.mean(dim=1).cpu().numpy()
-            features.append(indic_embeddings)
+            embeddings_df = pd.DataFrame(indic_embeddings, columns=[f'embedding_{i}' for i in range(indic_embeddings.shape[1])])
+            features.append(embeddings_df)
 
         # Extract sentence embeddings
         sentence_embeddings = self.sentence_model.encode([text])
-        features.append(sentence_embeddings)
+        embeddings_df = pd.DataFrame(sentence_embeddings, columns=[f'embedding_{i}' for i in range(sentence_embeddings.shape[1])])
+        features.append(embeddings_df)
 
-        # Concatenate all features
-        # combined_features = np.concatenate(features, axis=1)
         return features
 
     @classmethod

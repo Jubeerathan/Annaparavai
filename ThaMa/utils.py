@@ -23,16 +23,21 @@ def load_resources():
         print("Downloading required resources...")
         download_resources()
     
+def load_language_resources(language):
+    """Load resources for specific language"""
+    if language.lower() not in ['tamil', 'malayalam']:
+        raise ValueError("Language must be either 'tamil' or 'malayalam'")
+        
+    # Load the scalers
     global scaler_mt5, scaler_roberta, scaler_indic, scaler_sentence, label_encoder
     
-    # Load the scalers
-    scaler_mt5 = joblib.load(os.path.join(RESOURCES_DIR, 'utils/MT5_scaler.pkl'))
-    scaler_roberta = joblib.load(os.path.join(RESOURCES_DIR, 'utils/XLM_scaler.pkl'))
-    scaler_indic = joblib.load(os.path.join(RESOURCES_DIR, 'utils/indic_scaler.pkl'))
-    scaler_sentence = joblib.load(os.path.join(RESOURCES_DIR, 'utils/sentence_scaler.pkl'))
+    scaler_mt5 = joblib.load(os.path.join(RESOURCES_DIR, f'utils/{language}/MT5_scaler.pkl'))
+    scaler_roberta = joblib.load(os.path.join(RESOURCES_DIR, f'utils/{language}/XLM_scaler.pkl'))
+    scaler_indic = joblib.load(os.path.join(RESOURCES_DIR, f'utils/{language}/indic_scaler.pkl'))
+    scaler_sentence = joblib.load(os.path.join(RESOURCES_DIR, f'utils/{language}/sentence_scaler.pkl'))
     
     # Load the label encoder
-    label_encoder = joblib.load(os.path.join(RESOURCES_DIR, 'utils/label_encoder.pkl'))
+    label_encoder = joblib.load(os.path.join(RESOURCES_DIR, f'utils/{language}/label_encoder.pkl'))
 
 # Initialize resources
 load_resources()
@@ -40,7 +45,10 @@ load_resources()
 def preprocess_input(X, scaler):
     return scaler.transform(X)
 
-def ensemble_predict_weights(model_mt5, model_roberta, model_indic, model_sentence, features, weights):
+def ensemble_predict_weights(model_mt5, model_roberta, model_indic, model_sentence, features, language, weights):
+
+    load_language_resources(language)
+
     # Scale inputs for each model
     X_mt5, X_roberta, X_indic, X_sentence = features[0], features[1], features[2], features[3]
     X_mt5 = preprocess_input(X_mt5, scaler_mt5)
@@ -66,4 +74,4 @@ def ensemble_predict_weights(model_mt5, model_roberta, model_indic, model_senten
     # Convert weighted probabilities to class predictions
     final_preds = np.argmax(combined_preds, axis=1)
 
-    return final_preds
+    return label_encoder.inverse_transform(final_preds)
