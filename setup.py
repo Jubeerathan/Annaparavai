@@ -15,9 +15,9 @@ setup(
     author=['Jubeerathan Thevakumar', 'Luheerathan Thevakumar'],
     author_email=['jubeerathan.20@cse.mrt.ac.lk', 'the.luheerathan@gmail.com'],
     description='A model to detect AI-generated and human-written text.',
-    long_description=open('README.md').read(),
+    long_description=open('README.md', encoding='utf-8').read(),
     long_description_content_type='text/markdown',
-    url='https://github.com/Jubeerathan/ThaMa',
+    url='https://github.com/Jubeerathan/Annaparavai',
     classifiers=[
         'Programming Language :: Python :: 3',
         'License :: OSI Approved :: MIT License',
