@@ -1,13 +1,13 @@
-# ThaMa
+# Annaparavai
 
 An AI-generated vs Human-written text detector for Tamil and Malayalam languages
 
 ## Installation
-```pip install ThaMa```
+```pip install Annaparavai```
 
 ## Usage
 ```python
-from ThaMa import TextDetector
+from Annaparavai import TextDetector
 
 # Initialize detector (choose language: 'Tamil' or 'Malayalam')
 detector = TextDetector(language='Tamil')
